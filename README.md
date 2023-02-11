@@ -44,6 +44,8 @@ GT - greather than<br/>
 GE - greather or equal<br/>
 LT - lower than<br/>
 LE - lower or equal<br/>
+IN - in (`IN ('list', 'of', 'values')`). Use commas to separate values.<br/>
+NIN - not in (`NOT IN ('list', 'of', 'values')`). Use commas to separate values.<br/>
 NULL - is null<br/>
 NNULL - is not null<br/>
 LIKE - like (anywhere in the string -> `LIKE '%VALUE%'`)<br/>
