@@ -1,6 +1,6 @@
 # flexfilter-args-resolver
 
-FlexfilterArgumentResolver is a tool to help create dynamic filters in Spring web applications. With it, you can use url parameters to create routes with complex and flexible filters, in a totally dynamic way.
+FlexfilterArgumentResolver is a tool to help create dynamic filters in Spring web applications. With it, you can use url parameters to create routes with complex and flexible filters, in a totally dynamic way. You can apply filters on the result by any field of the return model (except exotic data types). It also already includes pagination parameters.
 
 
 Example:
