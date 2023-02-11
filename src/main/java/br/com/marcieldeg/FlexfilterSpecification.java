@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaBuilder.In;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
@@ -72,6 +73,29 @@ class FlexfilterSpecification<T> implements Specification<T> {
 				filter.operation + " in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 	}
 
+	private Predicate createPredicateIn(Filter filter, Root<T> root, CriteriaBuilder builder) {
+		Class<?> clazz = root.get(filter.field).getJavaType();
+		if (clazz == String.class) {
+			In<String> in = builder.in(root.<String>get(filter.field));
+			for (String v : filter.value.split(","))
+				in.value(v);
+			return in;
+		} else if (clazz == Long.class) {
+			In<Long> in = builder.in(root.<Long>get(filter.field));
+			for (String v : filter.value.split(","))
+				in.value(Long.parseLong(v));
+			return in;
+		} else if (clazz == BigDecimal.class) {
+			In<BigDecimal> in = builder.in(root.<BigDecimal>get(filter.field));
+			for (String v : filter.value.split(","))
+				in.value(new BigDecimal(v));
+			return in;
+		}
+
+		throw new UnsupportedOperationException(
+				filter.operation + " in datatype " + root.get(filter.field).getJavaType().getSimpleName());
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
@@ -102,6 +126,12 @@ class FlexfilterSpecification<T> implements Specification<T> {
 				break;
 			case NNULL:
 				predicates.add(builder.isNotNull(root.get(filter.field)));
+				break;
+			case IN:
+				predicates.add(createPredicateIn(filter, root, builder));
+				break;
+			case NIN:
+				predicates.add(createPredicateIn(filter, root, builder).not());
 				break;
 			case LIKE:
 				if (root.get(filter.field).getJavaType() == String.class)
@@ -151,7 +181,7 @@ class FlexfilterSpecification<T> implements Specification<T> {
 	}
 
 	public static enum Operation {
-		EQ, NE, GT, GE, LT, LE, NULL, NNULL, LIKE, NLIKE, START, NSTART, END, NEND
+		EQ, NE, GT, GE, LT, LE, IN, NIN, NULL, NNULL, LIKE, NLIKE, START, NSTART, END, NEND
 	}
 
 	public static class Filter {
