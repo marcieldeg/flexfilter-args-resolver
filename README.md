@@ -11,7 +11,7 @@ http://localhost:8080/api/persons?page=0&size=10&sort=birthDate,DESC&name#START=
 
 ### 1- Usage
 i- Create a configuration class and register the module:
-```
+```java
 @Configuration
 public class ResolverConfig extends WebMvcConfigurationSupport {
 
@@ -22,7 +22,7 @@ public class ResolverConfig extends WebMvcConfigurationSupport {
 }
 ```
 ii- In your repository, create a method like this: 
-```
+```java
 @Repository
 public interface PersonRepository<PersonModel> extends JpaRepository<PersonModel, UUID>, JpaSpecificationExecutor<PersonModel> {
 	//
@@ -54,3 +54,31 @@ START - starts with (start of the string -> `LIKE 'VALUE%'`)<br/>
 NSTART - not starts with (start of the string -> `NOT LIKE 'VALUE%'`)<br/>
 END - ends with (end of the string -> `LIKE '%VALUE'`)<br/>
 NEND - not ends with (end of the string -> `NOT LIKE '%VALUE'`)
+
+### Examples
+1- 
+```
+http://localhost:8080/api/persons?name#START=Marciel&age#GE=35&age#LE=45&country#LIKE=BRASIL
+```
+Result SQL:
+```sql
+select *
+  from persons
+ where name like 'Marciel%'
+   and age >= 35
+   and age <= 45
+   and country like '%BRASIL%'
+```
+
+2- 
+```
+http://localhost:8080/api/cities?name=VITORIA&zipcode#NULL&country#NIN=BRASIL,ITALIA
+```
+Result SQL:
+```sql
+select *
+  from cities
+ where name = 'VITORIA'
+   and zipcode is null
+   and country not in ('BRASIL','ITALIA')
+```
