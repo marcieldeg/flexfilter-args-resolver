@@ -34,7 +34,7 @@ class FlexfilterSpecification<T> implements Specification<T> {
 		FlexfilterSpecification<U> specification = new FlexfilterSpecification<U>();
 
 		for (Entry<String, String[]> filter : filters.entrySet()) {
-			final Pattern pattern = Pattern.compile("^(?<field>[A-Z0-9_]+)(#(?<op>"
+			final Pattern pattern = Pattern.compile("^(?<field>[A-Z0-9_]+)(!(?<op>"
 					+ Stream.of(Operation.values()).map(Operation::name).collect(Collectors.joining("|")) + "))?$",
 					Pattern.CASE_INSENSITIVE);
 			final Matcher matcher = pattern.matcher(filter.getKey());
@@ -96,6 +96,28 @@ class FlexfilterSpecification<T> implements Specification<T> {
 				filter.operation + " in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 	}
 
+	private Predicate createPredicateBw(Filter filter, Root<T> root, CriteriaBuilder builder) {
+		String[] values = filter.value.split(",");
+
+		if (values.length != 2)
+			throw new UnsupportedOperationException(filter.operation + " expects two values");
+
+		Class<?> clazz = root.get(filter.field).getJavaType();
+		if (clazz == String.class)
+			return builder.between(root.<String>get(filter.field), values[0], values[1]);
+		else if (clazz == Long.class)
+			return builder.between(root.<Long>get(filter.field), Long.parseLong(values[0]), Long.parseLong(values[1]));
+		else if (clazz == BigDecimal.class)
+			return builder.between(root.<BigDecimal>get(filter.field), new BigDecimal(values[0]),
+					new BigDecimal(values[1]));
+		else if (clazz == LocalDateTime.class)
+			return builder.between(root.<LocalDateTime>get(filter.field), LocalDateTime.parse(values[0]),
+					LocalDateTime.parse(values[1]));
+
+		throw new UnsupportedOperationException(
+				filter.operation + " in datatype " + root.get(filter.field).getJavaType().getSimpleName());
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
@@ -121,10 +143,10 @@ class FlexfilterSpecification<T> implements Specification<T> {
 			case LT:
 				predicates.add(createPredicate(filter, root, builder::lessThan));
 				break;
-			case NULL:
+			case NL:
 				predicates.add(builder.isNull(root.get(filter.field)));
 				break;
-			case NNULL:
+			case NNL:
 				predicates.add(builder.isNotNull(root.get(filter.field)));
 				break;
 			case IN:
@@ -133,42 +155,48 @@ class FlexfilterSpecification<T> implements Specification<T> {
 			case NIN:
 				predicates.add(createPredicateIn(filter, root, builder).not());
 				break;
-			case LIKE:
+			case BW:
+				predicates.add(createPredicateBw(filter, root, builder));
+				break;
+			case NBW:
+				predicates.add(createPredicateBw(filter, root, builder).not());
+				break;
+			case LK:
 				if (root.get(filter.field).getJavaType() == String.class)
 					predicates.add(builder.like(root.<String>get(filter.field), "%" + filter.value + "%"));
 				else
 					throw new UnsupportedOperationException(
 							"LIKE in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 				break;
-			case NLIKE:
+			case NLK:
 				if (root.get(filter.field).getJavaType() == String.class)
 					predicates.add(builder.notLike(root.<String>get(filter.field), "%" + filter.value + "%"));
 				else
 					throw new UnsupportedOperationException(
 							"NLIKE in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 				break;
-			case START:
+			case SW:
 				if (root.get(filter.field).getJavaType() == String.class)
 					predicates.add(builder.like(root.<String>get(filter.field), filter.value + "%"));
 				else
 					throw new UnsupportedOperationException(
 							"START in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 				break;
-			case NSTART:
+			case NSW:
 				if (root.get(filter.field).getJavaType() == String.class)
 					predicates.add(builder.notLike(root.<String>get(filter.field), filter.value + "%"));
 				else
 					throw new UnsupportedOperationException(
 							"NSTART in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 				break;
-			case END:
+			case EW:
 				if (root.get(filter.field).getJavaType() == String.class)
 					predicates.add(builder.like(root.<String>get(filter.field), "%" + filter.value));
 				else
 					throw new UnsupportedOperationException(
 							"END in datatype " + root.get(filter.field).getJavaType().getSimpleName());
 				break;
-			case NEND:
+			case NEW:
 				if (root.get(filter.field).getJavaType() == String.class)
 					predicates.add(builder.notLike(root.<String>get(filter.field), "%" + filter.value));
 				else
@@ -181,7 +209,7 @@ class FlexfilterSpecification<T> implements Specification<T> {
 	}
 
 	public static enum Operation {
-		EQ, NE, GT, GE, LT, LE, IN, NIN, NULL, NNULL, LIKE, NLIKE, START, NSTART, END, NEND
+		EQ, NE, GT, GE, LT, LE, IN, NIN, BW, NBW, NL, NNL, LK, NLK, SW, NSW, EW, NEW
 	}
 
 	public static class Filter {

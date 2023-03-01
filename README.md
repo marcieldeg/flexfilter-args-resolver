@@ -6,7 +6,7 @@ FlexfilterArgumentResolver is a tool to help create dynamic filters in Spring we
 Example:
 
 ```
-http://localhost:8080/api/persons?page=0&size=10&sort=birthDate,DESC&name#START=Marciel&age#GE=35&age#LE=45&country#LIKE=BRASIL
+http://localhost:8080/api/persons?page=0&size=10&sort=birthDate,DESC&name!START=Marciel&age!GE=35&age!LE=45&country!LIKE=BRASIL
 ```
 
 ### 1- Usage
@@ -46,33 +46,32 @@ LT - lower than<br/>
 LE - lower or equal<br/>
 IN - in (`IN ('list', 'of', 'values')`). Use commas to separate values.<br/>
 NIN - not in (`NOT IN ('list', 'of', 'values')`). Use commas to separate values.<br/>
-NULL - is null<br/>
-NNULL - is not null<br/>
-LIKE - like (anywhere in the string -> `LIKE '%VALUE%'`)<br/>
-NLIKE - not like (anywhere in the string -> `NOT LIKE '%VALUE%'`)<br/>
-START - starts with (start of the string -> `LIKE 'VALUE%'`)<br/>
-NSTART - not starts with (start of the string -> `NOT LIKE 'VALUE%'`)<br/>
-END - ends with (end of the string -> `LIKE '%VALUE'`)<br/>
-NEND - not ends with (end of the string -> `NOT LIKE '%VALUE'`)
+NL - is null<br/>
+NNL - is not null<br/>
+LK - like (anywhere in the string -> `LIKE '%VALUE%'`)<br/>
+NLK - not like (anywhere in the string -> `NOT LIKE '%VALUE%'`)<br/>
+SW - starts with (start of the string -> `LIKE 'VALUE%'`)<br/>
+NSW - not starts with (start of the string -> `NOT LIKE 'VALUE%'`)<br/>
+EW - ends with (end of the string -> `LIKE '%VALUE'`)<br/>
+NEW - not ends with (end of the string -> `NOT LIKE '%VALUE'`)
 
 ### Examples
 1- 
 ```
-http://localhost:8080/api/persons?name#START=Marciel&age#GE=35&age#LE=45&country#LIKE=BRASIL
+http://localhost:8080/api/persons?name!SW=Marciel&age!BW=35,45&country!LK=BRASIL
 ```
 Result SQL:
 ```sql
 select *
   from persons
  where name like 'Marciel%'
-   and age >= 35
-   and age <= 45
+   and age between 35 and 45
    and country like '%BRASIL%'
 ```
 
 2- 
 ```
-http://localhost:8080/api/cities?name=VITORIA&zipcode#NULL&country#NIN=BRASIL,ITALIA
+http://localhost:8080/api/cities?name=VITORIA&zipcode!NULL&country!NIN=BRASIL,ITALIA&population!GT=20000
 ```
 Result SQL:
 ```sql
@@ -81,4 +80,5 @@ select *
  where name = 'VITORIA'
    and zipcode is null
    and country not in ('BRASIL','ITALIA')
+   and population > 20000
 ```
